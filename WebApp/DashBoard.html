@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VulScan — Java Security Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ─── Reset ─────────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#0d0f14;--s1:#13161e;--s2:#1a1e28;--s3:#1f2433;
+  --b1:#252a38;--b2:#2e3447;--b3:#3a4055;
+  --cyan:#00e5ff;--cyan2:#00b8cc;
+  --red:#ff3b5c;--red2:#c4293f;
+  --green:#00e676;--green2:#00a854;
+  --yellow:#ffb300;--purple:#b388ff;--orange:#ff7043;
+  --text:#e2e8f0;--muted:#8892a4;--muted2:#5c6478;
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;
+  --r:10px;--r2:14px;
+}
+
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+
+/* ─── Layout ─────────────────────────────────────────────────────────────── */
+.layout{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.sidebar{background:var(--s1);border-right:1px solid var(--b1);padding:1.4rem 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.main{padding:2rem 2.2rem;overflow-y:auto;max-height:100vh}
+
+/* ─── Sidebar ────────────────────────────────────────────────────────────── */
+.brand{padding:.4rem 1.4rem 1.4rem;border-bottom:1px solid var(--b1);margin-bottom:.8rem}
+.brand-mark{font-family:var(--mono);font-weight:700;font-size:1.1rem;color:var(--cyan);letter-spacing:.04em}
+.brand-sub{font-size:.72rem;color:var(--muted);margin-top:2px}
+
+.nav-item{display:flex;align-items:center;gap:10px;padding:.65rem 1.4rem;cursor:pointer;color:var(--muted);font-size:.88rem;transition:all .15s;border-left:2px solid transparent;user-select:none}
+.nav-item:hover{color:var(--text);background:var(--s2)}
+.nav-item.active{color:var(--cyan);background:rgba(0,229,255,.06);border-left-color:var(--cyan)}
+.nav-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:.65rem;font-family:var(--mono);padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
+.nav-badge.green{background:var(--green2)}
+.nav-badge.yellow{background:var(--yellow);color:#000}
+
+.sidebar-footer{margin-top:auto;padding:1rem 1.4rem;border-top:1px solid var(--b1)}
+.conn-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;animation:blink 2s infinite}
+.conn-label{font-size:.72rem;color:var(--muted);font-family:var(--mono)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ─── Pages ──────────────────────────────────────────────────────────────── */
+.page{display:none}.page.active{display:block}
+.page-header{margin-bottom:1.6rem}
+.page-title{font-size:1.2rem;font-weight:600}
+.page-sub{font-size:.82rem;color:var(--muted);margin-top:4px}
+
+/* ─── Section head ───────────────────────────────────────────────────────── */
+.sh{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.8rem;display:flex;align-items:center;gap:8px}
+.sh::after{content:'';flex:1;height:1px;background:var(--b1)}
+
+/* ─── Stat grid ──────────────────────────────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:1.4rem}
+.stat-box{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:1.1rem 1.2rem}
+.stat-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px}
+.stat-value{font-family:var(--mono);font-size:1.55rem;font-weight:700}
+.stat-value.good{color:var(--green)}.stat-value.ok{color:var(--yellow)}.stat-value.bad{color:var(--red)}
+.stat-sub{font-size:.7rem;color:var(--muted2);margin-top:3px;font-family:var(--mono)}
+
+/* ─── Cards ──────────────────────────────────────────────────────────────── */
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:1.4rem 1.6rem;margin-bottom:1rem}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:.68rem 1.2rem;border:none;border-radius:8px;cursor:pointer;font-family:var(--mono);font-weight:700;font-size:.84rem;letter-spacing:.04em;transition:all .2s}
+.btn-primary{background:var(--cyan);color:#0d0f14}
+.btn-primary:hover:not(:disabled){background:var(--cyan2);box-shadow:0 0 18px rgba(0,229,255,.3);transform:translateY(-1px)}
+.btn-secondary{background:transparent;color:var(--muted);border:1px solid var(--b2)}
+.btn-secondary:hover{color:var(--text);border-color:var(--b3)}
+.btn-danger{background:rgba(255,59,92,.1);color:var(--red);border:1px solid rgba(255,59,92,.28)}
+.btn-danger:hover{background:rgba(255,59,92,.18)}
+.btn-success{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.28)}
+.btn-success:hover{background:rgba(0,230,118,.18)}
+.btn-warn{background:rgba(255,179,0,.1);color:var(--yellow);border:1px solid rgba(255,179,0,.28)}
+.btn-warn:hover{background:rgba(255,179,0,.18)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.2rem}
+.btn-full{width:100%;justify-content:center;margin-top:1rem}
+
+/* ─── Progress beam ──────────────────────────────────────────────────────── */
+.prog-card{display:none;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:1.4rem 1.6rem;margin-bottom:1rem}
+.prog-header{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
+.prog-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);animation:blink 1s infinite}
+.prog-lbl{font-family:var(--mono);font-size:.85rem;color:var(--cyan)}
+.prog-track{height:3px;background:var(--b2);border-radius:2px;overflow:hidden;margin-bottom:.8rem}
+.prog-beam{height:100%;width:35%;background:linear-gradient(90deg,transparent,var(--cyan),transparent);animation:sweep 1.6s ease-in-out infinite}
+@keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(400%)}}
+.prog-log{font-family:var(--mono);font-size:.76rem;color:var(--muted);line-height:1.9}
+.log-ok{color:var(--green)}.log-info{color:var(--cyan)}.log-warn{color:var(--yellow)}
+
+/* ─── Error toast ────────────────────────────────────────────────────────── */
+.err-strip{display:none;background:rgba(255,59,92,.06);border:1px solid rgba(255,59,92,.28);border-radius:var(--r);padding:1rem 1.4rem;font-family:var(--mono);font-size:.82rem;color:var(--red);margin-bottom:1rem}
+
+/* ─── Prob / imp bars ────────────────────────────────────────────────────── */
+.prob-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.prob-lbl{width:90px;flex-shrink:0;color:var(--muted);font-family:var(--mono);font-size:.82rem}
+.bar-track{flex:1;height:7px;background:var(--b2);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width 1s cubic-bezier(.4,0,.2,1);width:0%}
+.fill-red{background:var(--red)}.fill-green{background:var(--green)}.fill-cyan{background:var(--cyan)}.fill-yellow{background:var(--yellow)}.fill-purple{background:var(--purple)}
+.bar-val{width:44px;text-align:right;font-family:var(--mono);font-size:.8rem}
+
+.imp-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.imp-name{width:200px;flex-shrink:0;font-family:var(--mono);font-size:.74rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.imp-track{flex:1;height:6px;background:var(--b2);border-radius:3px;overflow:hidden}
+.imp-fill{height:100%;background:var(--cyan);opacity:.8;border-radius:3px;transition:width 1s cubic-bezier(.4,0,.2,1);width:0%}
+.imp-pct{width:44px;text-align:right;font-family:var(--mono);font-size:.73rem;color:var(--muted)}
+
+/* ─── Confusion matrix ───────────────────────────────────────────────────── */
+.cm2{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:280px;margin:.6rem 0}
+.cm-cell{border-radius:8px;padding:.9rem;text-align:center;border:1px solid var(--b2)}
+.cm-val{font-family:var(--mono);font-size:1.5rem;font-weight:700}
+.cm-lbl{font-size:.65rem;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.06em}
+.cm-tp .cm-val,.cm-tn .cm-val{color:var(--green)}.cm-fp .cm-val,.cm-fn .cm-val{color:var(--red)}
+.cm-tp,.cm-tn{background:rgba(0,230,118,.05);border-color:rgba(0,230,118,.2)}
+.cm-fp,.cm-fn{background:rgba(255,59,92,.05);border-color:rgba(255,59,92,.2)}
+
+/* ─── Scanner ────────────────────────────────────────────────────────────── */
+.drop-zone{border:1.5px dashed var(--b2);border-radius:var(--r);padding:2rem 1rem;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--cyan2);background:rgba(0,229,255,.03)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:2rem;margin-bottom:.5rem}
+.drop-lbl{font-size:.88rem;color:var(--muted);line-height:1.5}
+.drop-lbl strong{color:var(--cyan)}
+.file-chosen{margin-top:.8rem;font-family:var(--mono);font-size:.8rem;color:var(--muted);word-break:break-all}
+.verdict-banner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.1rem 1.3rem;border-radius:var(--r);margin-bottom:1.4rem;border:1px solid}
+.verdict-banner.vuln{background:rgba(255,59,92,.06);border-color:rgba(255,59,92,.3)}
+.verdict-banner.safe{background:rgba(0,230,118,.06);border-color:rgba(0,230,118,.3)}
+.verdict-left{display:flex;align-items:center;gap:11px}
+.verdict-icon{font-size:1.5rem;line-height:1}
+.verdict-label{font-size:1.1rem;font-weight:600}
+.verdict-file{font-family:var(--mono);font-size:.76rem;color:var(--muted);margin-top:2px}
+.verdict-right{text-align:right;flex-shrink:0}
+.conf-lbl{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
+.conf-val{font-family:var(--mono);font-size:1.3rem;font-weight:700}
+.cat-badge{display:inline-block;font-family:var(--mono);font-weight:700;font-size:.9rem;letter-spacing:.1em;padding:.45rem 1rem;border-radius:6px;background:rgba(255,179,0,.1);color:var(--yellow);border:1px solid rgba(255,179,0,.3);margin-bottom:.8rem}
+.feat-toggle{all:unset;cursor:pointer;font-family:var(--mono);font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:6px;margin-top:1rem;padding:.4rem 0}
+.feat-toggle:hover{color:var(--cyan)}
+.feat-values{display:none;margin-top:.6rem;max-height:280px;overflow-y:auto}
+.feat-values.open{display:block}
+.feat-kv{display:flex;justify-content:space-between;padding:.22rem 0;border-bottom:1px solid var(--b1);font-family:var(--mono);font-size:.75rem}
+.feat-k{color:var(--muted)}.feat-v{color:var(--muted2)}.feat-v.nz{color:var(--text)}
+
+/* ─── Training tabs ──────────────────────────────────────────────────────── */
+.model-tabs{display:flex;gap:8px;margin-bottom:1.4rem}
+.model-tab{flex:1;padding:.7rem 1rem;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);cursor:pointer;text-align:center;transition:all .2s;font-family:var(--mono);font-size:.82rem;color:var(--muted)}
+.model-tab:hover{border-color:var(--b2);color:var(--text)}
+.model-tab.active{background:rgba(0,229,255,.06);border-color:var(--cyan);color:var(--cyan)}
+.model-tab .mt-lbl{font-weight:700;font-size:.88rem;margin-bottom:2px}
+.model-tab .mt-sub{font-size:.7rem;color:var(--muted2)}
+.model-tab.active .mt-sub{color:var(--cyan2)}
+.config-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem}
+.config-item label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px}
+.config-item input{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:6px;padding:.46rem .7rem;color:var(--text);font-family:var(--mono);font-size:.86rem;outline:none;transition:border-color .2s}
+.config-item input:focus{border-color:var(--cyan)}
+.dur-badge{display:inline-flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:.28rem .7rem;font-family:var(--mono);font-size:.76rem;color:var(--muted);margin-bottom:1rem}
+.dur-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+
+/* ─── Per-class table ────────────────────────────────────────────────────── */
+.pc-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.78rem}
+.pc-table th{padding:6px 10px;text-align:left;color:var(--muted);font-size:.68rem;font-weight:500;border-bottom:1px solid var(--b1)}
+.pc-table td{padding:7px 10px;border-bottom:1px solid var(--b1)}
+.pc-table tr:last-child td{border-bottom:none}
+.cls-name{color:var(--yellow);font-weight:700}
+.mini-wrap{display:flex;align-items:center;gap:6px}
+.mini-bar{width:55px;height:5px;background:var(--b2);border-radius:3px;overflow:hidden;flex-shrink:0}
+.mini-fill{height:100%;border-radius:3px;transition:width .9s cubic-bezier(.4,0,.2,1);width:0%}
+
+/* ─── Active Learning queue ─────────────────────────────────────────────── */
+.al-tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+.al-tab{padding:.38rem .9rem;border-radius:6px;border:1px solid var(--b2);cursor:pointer;font-family:var(--mono);font-size:.78rem;color:var(--muted);transition:all .2s}
+.al-tab:hover{color:var(--text)}
+.al-tab.active{border-color:var(--purple);color:var(--purple);background:rgba(179,136,255,.07)}
+
+.alert-card{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:1rem 1.2rem;margin-bottom:.8rem;transition:border-color .2s,opacity .2s}
+.alert-card.reviewed{opacity:.45;border-color:var(--green2)}
+.alert-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:.6rem}
+.alert-id{font-family:var(--mono);font-size:.78rem;color:var(--cyan);word-break:break-all;flex:1}
+.alert-badges{display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap}
+.badge{font-family:var(--mono);font-size:.66rem;padding:2px 7px;border-radius:10px;font-weight:500}
+.badge-vuln{background:rgba(255,59,92,.14);color:var(--red);border:1px solid rgba(255,59,92,.3)}
+.badge-safe{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.25)}
+.badge-cat{background:rgba(255,179,0,.1);color:var(--yellow);border:1px solid rgba(255,179,0,.3)}
+.badge-unc-high{background:rgba(255,59,92,.1);color:var(--red);border:1px solid rgba(255,59,92,.3)}
+.badge-unc-med{background:rgba(255,179,0,.1);color:var(--yellow);border:1px solid rgba(255,179,0,.3)}
+.badge-unc-low{background:rgba(179,136,255,.1);color:var(--purple);border:1px solid rgba(179,136,255,.3)}
+.alert-summary{font-size:.8rem;color:var(--muted);line-height:1.5;margin-bottom:.7rem}
+
+.unc-row{display:flex;align-items:center;gap:8px;margin-bottom:.8rem}
+.unc-lbl{font-family:var(--mono);font-size:.7rem;color:var(--muted);width:80px;flex-shrink:0}
+.unc-track{flex:1;height:5px;background:var(--b2);border-radius:3px;overflow:hidden}
+.unc-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--red));border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1);width:0%}
+
+.review-row{display:flex;gap:8px;margin-bottom:.6rem;flex-wrap:wrap}
+.review-input{flex:1;min-width:120px;background:var(--s1);border:1px solid var(--b2);border-radius:6px;padding:.38rem .65rem;color:var(--text);font-family:var(--mono);font-size:.8rem;outline:none;transition:border-color .2s}
+.review-input:focus{border-color:var(--cyan)}
+.review-btn-row{display:flex;gap:7px;flex-wrap:wrap}
+.review-status{font-family:var(--mono);font-size:.75rem;margin-top:.4rem;min-height:1.1em}
+.review-status.ok{color:var(--green)}.review-status.err{color:var(--red)}
+
+/* ─── Reviews table ──────────────────────────────────────────────────────── */
+.rev-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.76rem}
+.rev-table th{padding:6px 10px;text-align:left;color:var(--muted);font-size:.66rem;border-bottom:1px solid var(--b1);white-space:nowrap}
+.rev-table td{padding:6px 10px;border-bottom:1px solid var(--b1);white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.rev-table tr:last-child td{border-bottom:none}
+.label-vuln{color:var(--red);font-weight:700}.label-safe{color:var(--green);font-weight:700}
+
+/* ─── Learning curve ─────────────────────────────────────────────────────── */
+.lc-wrap{position:relative;height:180px;overflow:hidden}
+.lc-canvas{width:100%;height:100%}
+
+/* ─── Empty state ─────────────────────────────────────────────────────────── */
+.empty{font-family:var(--mono);font-size:.8rem;color:var(--muted2);padding:1.2rem 0;text-align:center}
+
+/* ─── Multiclass confusion (NxN) ─────────────────────────────────────────── */
+.cm-table{border-collapse:collapse;font-family:var(--mono);font-size:.78rem;min-width:100%}
+.cm-table th{padding:5px 8px;color:var(--muted);font-weight:500;font-size:.68rem;white-space:nowrap}
+.cm-table td{padding:6px 8px;text-align:center;border:1px solid var(--b1);position:relative;white-space:nowrap}
+.cm-table .row-lbl{text-align:right;color:var(--muted);font-size:.7rem;border:none;padding-right:10px}
+.cm-diag{color:var(--green);font-weight:700}.cm-off{color:var(--red)}
+
+/* ─── Cat distribution ───────────────────────────────────────────────────── */
+.cat-dist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:.8rem}
+.cat-dist-item{background:var(--s2);border:1px solid var(--b1);border-radius:7px;padding:.55rem .9rem;display:flex;justify-content:space-between;align-items:center}
+.cat-dist-name{font-family:var(--mono);font-size:.76rem;color:var(--muted)}
+.cat-dist-val{font-family:var(--mono);font-size:.76rem;color:var(--text);font-weight:700}
+
+/* ─── Toast ──────────────────────────────────────────────────────────────── */
+#toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:.75rem 1.2rem;font-family:var(--mono);font-size:.8rem;color:var(--text);z-index:999;opacity:0;pointer-events:none;transition:opacity .3s;max-width:320px}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- ════════════════════ SIDEBAR ════════════════════ -->
+<nav class="sidebar">
+  <div class="brand">
+    <div class="brand-mark">⬡ VulScan</div>
+    <div class="brand-sub">OWASP Benchmark · GBM</div>
+  </div>
+
+  <div class="nav-item active" onclick="nav('overview')">
+    <span class="nav-icon">◈</span> Overview
+  </div>
+  <div class="nav-item" onclick="nav('scanner')">
+    <span class="nav-icon">⬡</span> Scanner
+  </div>
+  <div class="nav-item" onclick="nav('training')">
+    <span class="nav-icon">⚙</span> Training
+  </div>
+  <div class="nav-item" onclick="nav('active-learning')">
+    <span class="nav-icon">◎</span> Active Learning
+    <span class="nav-badge yellow" id="al-nav-badge">0</span>
+  </div>
+  <div class="nav-item" onclick="nav('reviews')">
+    <span class="nav-icon">✓</span> Reviews
+    <span class="nav-badge green" id="rev-nav-badge">0</span>
+  </div>
+
+  <div class="sidebar-footer">
+    <div>
+      <span class="conn-dot"></span>
+      <span class="conn-label" id="conn-label">connecting…</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ════════════════════ MAIN ════════════════════ -->
+<main class="main">
+
+<!-- ── OVERVIEW ── -->
+<section class="page active" id="page-overview">
+  <div class="page-header">
+    <div class="page-title">Platform Overview</div>
+    <div class="page-sub">Real-time stats across scanner, training, and active learning.</div>
+  </div>
+
+  <div class="stat-grid" id="ov-stats">
+    <div class="stat-box"><div class="stat-label">Queue Pending</div><div class="stat-value" id="ov-pending">—</div><div class="stat-sub">awaiting review</div></div>
+    <div class="stat-box"><div class="stat-label">Total Reviews</div><div class="stat-value good" id="ov-reviews">—</div><div class="stat-sub">analyst labels</div></div>
+    <div class="stat-box"><div class="stat-label">High Uncertainty</div><div class="stat-value ok" id="ov-highunc">—</div><div class="stat-sub">items &gt;35% unc.</div></div>
+    <div class="stat-box"><div class="stat-label">Last Accuracy</div><div class="stat-value" id="ov-acc">—</div><div class="stat-sub">binary model</div></div>
+    <div class="stat-box"><div class="stat-label">Last F1</div><div class="stat-value" id="ov-f1">—</div><div class="stat-sub">binary model</div></div>
+    <div class="stat-box"><div class="stat-label">Analyst Labels</div><div class="stat-value" id="ov-nlabels">—</div><div class="stat-sub">in training set</div></div>
+  </div>
+
+  <div class="sh">Learning Curve</div>
+  <div class="card">
+    <div class="lc-wrap"><canvas id="lc-canvas" class="lc-canvas"></canvas></div>
+    <div style="text-align:center;font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-top:.5rem">Binary accuracy over each retrain — grows as analyst labels accumulate</div>
+  </div>
+
+  <div class="sh">Review Category Distribution</div>
+  <div class="card">
+    <div class="cat-dist-grid" id="ov-catdist"><div class="empty">No reviews yet.</div></div>
+  </div>
+</section>
+
+<!-- ── SCANNER ── -->
+<section class="page" id="page-scanner">
+  <div class="page-header">
+    <div class="page-title">Java Vulnerability Scanner</div>
+    <div class="page-sub">Upload a .java file for binary + category classification.</div>
+  </div>
+
+  <div class="card">
+    <div class="drop-zone" id="sc-drop">
+      <input type="file" id="sc-file" accept=".java">
+      <div class="drop-icon">⬡</div>
+      <div class="drop-lbl"><strong>Choose a .java file</strong> or drag it here</div>
+      <div class="file-chosen" id="sc-chosen">No file selected</div>
+    </div>
+    <div class="btn-row" style="margin-top:1rem;margin-bottom:0">
+      <button class="btn btn-primary" id="sc-btn" disabled onclick="runScan()" style="flex:1">RUN SCAN</button>
+      <button class="btn btn-warn" id="sc-queue-btn" disabled onclick="queueScan()" style="flex:1">+ ADD TO REVIEW QUEUE</button>
+    </div>
+  </div>
+
+  <div class="err-strip" id="sc-err"></div>
+
+  <div class="prog-card" id="sc-prog">
+    <div class="prog-header"><div class="prog-dot"></div><span class="prog-lbl">Analyzing bytecode patterns…</span></div>
+    <div class="prog-track"><div class="prog-beam"></div></div>
+    <div style="font-family:var(--mono);font-size:.8rem;color:var(--muted);margin-top:.5rem">file: <span id="sc-fname">—</span></div>
+  </div>
+
+  <div id="sc-result" style="display:none">
+    <div class="card">
+      <div class="verdict-banner" id="sc-verdict-banner">
+        <div class="verdict-left">
+          <div class="verdict-icon" id="sc-icon"></div>
+          <div>
+            <div class="verdict-label" id="sc-label"></div>
+            <div class="verdict-file" id="sc-vfile"></div>
+          </div>
+        </div>
+        <div class="verdict-right">
+          <div class="conf-lbl">Confidence</div>
+          <div class="conf-val" id="sc-conf"></div>
+        </div>
+      </div>
+      <div class="sh">Binary Classification</div>
+      <div class="prob-row"><span class="prob-lbl">Vulnerable</span><div class="bar-track"><div class="bar-fill fill-red" id="sc-bvuln"></div></div><span class="bar-val" id="sc-pvuln">—</span></div>
+      <div class="prob-row"><span class="prob-lbl">Safe</span><div class="bar-track"><div class="bar-fill fill-green" id="sc-bsafe"></div></div><span class="bar-val" id="sc-psafe">—</span></div>
+    </div>
+
+    <div class="card" id="sc-cat-card" style="display:none">
+      <div class="sh">Vulnerability Category</div>
+      <div class="cat-badge" id="sc-cat-badge">—</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:.8rem">Model confidence: <strong id="sc-cat-conf">—</strong></div>
+      <div id="sc-cat-bars"></div>
+    </div>
+
+    <div class="card">
+      <div class="sh">Feature Importances <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:.68rem">(binary model)</span></div>
+      <div id="sc-imp-grid"></div>
+      <button class="feat-toggle" onclick="toggleFeat()" id="sc-feat-toggle">▶ Show raw feature values</button>
+      <div class="feat-values" id="sc-feat-values"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TRAINING ── -->
+<section class="page" id="page-training">
+  <div class="page-header">
+    <div class="page-title">Model Training</div>
+    <div class="page-sub">Retrain binary or category classifier with custom hyperparameters.</div>
+  </div>
+
+  <div class="model-tabs">
+    <div class="model-tab active" id="tr-tab-binary" onclick="selectModel('binary')">
+      <div class="mt-lbl">Binary Model</div>
+      <div class="mt-sub">Vulnerable / Safe</div>
+    </div>
+    <div class="model-tab" id="tr-tab-category" onclick="selectModel('category')">
+      <div class="mt-lbl">Category Model</div>
+      <div class="mt-sub">sqli · xss · cmdi…</div>
+    </div>
+    <div class="model-tab" id="tr-tab-all" onclick="selectModel('all')">
+      <div class="mt-lbl">Train Both</div>
+      <div class="mt-sub">Sequential ~25s</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sh">Hyperparameters <span style="font-weight:400;text-transform:none;font-size:.68rem;letter-spacing:0">(leave blank for defaults)</span></div>
+    <div class="config-grid">
+      <div class="config-item">
+        <label>n_estimators</label>
+        <input type="number" id="hp-n" placeholder="default: 100 / 200">
+      </div>
+      <div class="config-item">
+        <label>learning_rate</label>
+        <input type="number" id="hp-lr" step="0.01" placeholder="default: 0.1">
+      </div>
+      <div class="config-item">
+        <label>max_depth</label>
+        <input type="number" id="hp-d" placeholder="default: 3 / 5">
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" id="tr-btn" onclick="runTraining()">START TRAINING</button>
+  </div>
+
+  <div class="err-strip" id="tr-err"></div>
+
+  <div class="prog-card" id="tr-prog">
+    <div class="prog-header"><div class="prog-dot"></div><span class="prog-lbl" id="tr-prog-lbl">Initialising…</span></div>
+    <div class="prog-track"><div class="prog-beam"></div></div>
+    <div class="prog-log" id="tr-log"></div>
+  </div>
+
+  <div id="tr-results" style="display:none">
+    <div class="dur-badge"><div class="dur-dot"></div><span id="tr-dur">—</span></div>
+    <div class="sh">Metrics</div>
+    <div class="stat-grid" id="tr-stats"></div>
+    <div class="card" id="tr-cm-card">
+      <div class="sh">Confusion Matrix</div>
+      <div id="tr-cm-wrap"></div>
+    </div>
+    <div class="card" id="tr-pc-card" style="display:none">
+      <div class="sh">Per-Class Metrics</div>
+      <div style="overflow-x:auto"><table class="pc-table"><thead><tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead><tbody id="tr-pc-tbody"></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="sh">Feature Importances</div>
+      <div id="tr-imp-grid"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── ACTIVE LEARNING ── -->
+<section class="page" id="page-active-learning">
+  <div class="page-header">
+    <div class="page-title">Active Learning Queue</div>
+    <div class="page-sub">Samples ranked by uncertainty — your labels directly improve the model.</div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="loadQueue()">↻ Refresh Queue</button>
+    <button class="btn btn-warn" onclick="retrainActive()" id="al-retrain-btn">⚡ Retrain with Labels</button>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-box"><div class="stat-label">Pending</div><div class="stat-value" id="al-pending">—</div></div>
+    <div class="stat-box"><div class="stat-label">High Uncertainty</div><div class="stat-value bad" id="al-highunc">—</div></div>
+    <div class="stat-box"><div class="stat-label">Boundary</div><div class="stat-value ok" id="al-boundary">—</div></div>
+  </div>
+
+  <div class="err-strip" id="al-err"></div>
+  <div class="prog-card" id="al-prog">
+    <div class="prog-header"><div class="prog-dot"></div><span class="prog-lbl" id="al-prog-lbl">Retraining with analyst labels…</span></div>
+    <div class="prog-track"><div class="prog-beam"></div></div>
+    <div class="prog-log" id="al-log"></div>
+  </div>
+  <div class="card" id="al-retrain-result" style="display:none">
+    <div class="sh">Retrain Result</div>
+    <div class="stat-grid" id="al-retrain-stats"></div>
+  </div>
+
+  <div class="al-tabs">
+    <div class="al-tab active" id="alt-high" onclick="switchAlTab('high')">🔴 High Uncertainty <span id="alt-high-cnt"></span></div>
+    <div class="al-tab" id="alt-bound" onclick="switchAlTab('boundary')">🟡 Boundary <span id="alt-bound-cnt"></span></div>
+    <div class="al-tab" id="alt-multi" onclick="switchAlTab('multi')">🟣 Multi-flagged <span id="alt-multi-cnt"></span></div>
+  </div>
+
+  <div id="al-high-list"></div>
+  <div id="al-boundary-list" style="display:none"></div>
+  <div id="al-multi-list" style="display:none"></div>
+</section>
+
+<!-- ── REVIEWS ── -->
+<section class="page" id="page-reviews">
+  <div class="page-header">
+    <div class="page-title">Analyst Reviews</div>
+    <div class="page-sub">All completed human-in-the-loop labels.</div>
+  </div>
+
+  <button class="btn btn-secondary" onclick="loadReviews()">↻ Refresh</button>
+
+  <div class="stat-grid" style="margin-top:1rem">
+    <div class="stat-box"><div class="stat-label">Total Reviews</div><div class="stat-value good" id="rv-total">—</div></div>
+    <div class="stat-box"><div class="stat-label">Marked Vulnerable</div><div class="stat-value bad" id="rv-vuln">—</div></div>
+    <div class="stat-box"><div class="stat-label">Marked Safe</div><div class="stat-value good" id="rv-safe">—</div></div>
+  </div>
+
+  <div class="card" style="margin-top:1rem">
+    <div style="overflow-x:auto" id="rv-table-wrap">
+      <div class="empty">No reviews yet. Submit from the Active Learning tab.</div>
+    </div>
+  </div>
+</section>
+
+</main>
+</div><!-- /layout -->
+
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════════════════ */
+const API = 'http://localhost:8000';
+let currentModel = 'binary';
+let currentAlTab = 'high';
+let scFile = null;
+
+/* ══════════════════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════════════════ */
+function nav(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  const items = document.querySelectorAll('.nav-item');
+  const labels = ['overview','scanner','training','active-learning','reviews'];
+  labels.forEach((l, i) => { if (l === id) items[i].classList.add('active'); });
+  if (id === 'overview')        loadOverview();
+  if (id === 'active-learning') loadQueue();
+  if (id === 'reviews')         loadReviews();
+}
+
+/* ══════════════════════════════════════════════════════
+   CONNECTION CHECK
+══════════════════════════════════════════════════════ */
+async function checkConn() {
+  try {
+    const r = await fetch(`${API}/health`, { signal: AbortSignal.timeout(3000) });
+    const d = await r.json();
+    document.getElementById('conn-label').textContent =
+      `API ok · bin:${d.binary_loaded?'✓':'✗'} cat:${d.category_loaded?'✓':'✗'}`;
+  } catch {
+    document.getElementById('conn-label').textContent = 'API offline';
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════ */
+function toast(msg, dur=3500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+
+/* ══════════════════════════════════════════════════════
+   OVERVIEW
+══════════════════════════════════════════════════════ */
+async function loadOverview() {
+  try {
+    const r = await fetch(`${API}/api/overview`);
+    const d = await r.json();
+    setText('ov-pending',  d.queue.pending);
+    setText('ov-reviews',  d.reviews.total);
+    setText('ov-highunc',  d.queue.high_uncertainty);
+    const lm = d.last_retrain;
+    setText('ov-acc',     lm ? pct(lm.accuracy) : '—');
+    setText('ov-f1',      lm ? pct(lm.f1) : '—');
+    setText('ov-nlabels', lm ? lm.n_analyst : '—');
+    document.getElementById('al-nav-badge').textContent = d.queue.pending;
+    document.getElementById('rev-nav-badge').textContent = d.reviews.total;
+
+    // Cat dist
+    const catEl = document.getElementById('ov-catdist');
+    const dist = d.reviews.category_distribution;
+    if (Object.keys(dist).length) {
+      catEl.innerHTML = Object.entries(dist)
+        .sort((a,b) => b[1]-a[1])
+        .map(([k,v]) => `<div class="cat-dist-item"><span class="cat-dist-name">${k}</span><span class="cat-dist-val">${v}</span></div>`)
+        .join('');
+    } else {
+      catEl.innerHTML = '<div class="empty">No reviews yet.</div>';
+    }
+
+    // Learning curve
+    const mr = await fetch(`${API}/api/metrics-history`);
+    const md = await mr.json();
+    drawLearningCurve(md.history || []);
+  } catch(e) {
+    toast('Overview error: ' + e.message);
+  }
+}
+
+function drawLearningCurve(history) {
+  const canvas = document.getElementById('lc-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * devicePixelRatio;
+  canvas.height = canvas.offsetHeight * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  ctx.clearRect(0,0,W,H);
+
+  if (!history.length) {
+    ctx.fillStyle = '#5c6478';
+    ctx.font = '12px JetBrains Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('No retrain history yet — train the model to see learning curve', W/2, H/2);
+    return;
+  }
+
+  const accs = history.map(h => h.accuracy);
+  const minA = Math.min(...accs) * 0.98;
+  const maxA = 1.0;
+  const pad = { t:16, r:16, b:24, l:48 };
+  const iW = W - pad.l - pad.r, iH = H - pad.t - pad.b;
+
+  // Grid
+  ctx.strokeStyle = '#252a38'; ctx.lineWidth = 1;
+  [0.7,0.8,0.9,1.0].forEach(v => {
+    const y = pad.t + iH - (v - minA) / (maxA - minA) * iH;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + iW, y); ctx.stroke();
+    ctx.fillStyle = '#5c6478'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    ctx.fillText((v*100).toFixed(0)+'%', pad.l-6, y+3);
+  });
+
+  // Line
+  const pts = accs.map((a, i) => ({
+    x: pad.l + (i / Math.max(accs.length-1,1)) * iW,
+    y: pad.t + iH - (a - minA) / (maxA - minA) * iH
+  }));
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Dots
+  pts.forEach(p => {
+    ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
+    ctx.fillStyle = '#00e5ff'; ctx.fill();
+  });
+
+  // X labels
+  ctx.fillStyle = '#5c6478'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+  history.forEach((h, i) => {
+    const x = pad.l + (i / Math.max(history.length-1,1)) * iW;
+    ctx.fillText(`+${h.n_analyst}`, x, H - 4);
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   SCANNER
+══════════════════════════════════════════════════════ */
+const scDrop = document.getElementById('sc-drop');
+const scInput = document.getElementById('sc-file');
+scInput.addEventListener('change', () => { scFile = scInput.files[0] || null; updateScFile(); });
+scDrop.addEventListener('dragover', e => { e.preventDefault(); scDrop.classList.add('drag-over'); });
+scDrop.addEventListener('dragleave', () => scDrop.classList.remove('drag-over'));
+scDrop.addEventListener('drop', e => {
+  e.preventDefault(); scDrop.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.name.endsWith('.java')) { scFile = f; updateScFile(); }
+  else toast('Please drop a .java file.');
+});
+function updateScFile() {
+  document.getElementById('sc-chosen').textContent = scFile ? scFile.name : 'No file selected';
+  document.getElementById('sc-btn').disabled = !scFile;
+  document.getElementById('sc-queue-btn').disabled = !scFile;
+}
+
+async function runScan() {
+  if (!scFile) return;
+  hide('sc-result'); hideErr('sc-err');
+  show('sc-prog'); disableBtn('sc-btn');
+  document.getElementById('sc-fname').textContent = scFile.name;
+  const fd = new FormData(); fd.append('file', scFile);
+  try {
+    const r = await fetch(`${API}/predict`, { method:'POST', body:fd });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || `HTTP ${r.status}`);
+    hide('sc-prog'); renderScan(d);
+  } catch(e) {
+    hide('sc-prog'); showErr('sc-err', `Scan failed: ${e.message}`);
+  } finally { enableBtn('sc-btn'); }
+}
+
+async function queueScan() {
+  if (!scFile) return;
+  disableBtn('sc-queue-btn');
+  const fd = new FormData(); fd.append('file', scFile);
+  try {
+    const r = await fetch(`${API}/api/queue`, { method:'POST', body:fd });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || `HTTP ${r.status}`);
+    toast(`✓ Queued: ${d.sample_id} (uncertainty ${(d.uncertainty_score*100).toFixed(1)}%)`);
+    document.getElementById('al-nav-badge').textContent = '!';
+  } catch(e) {
+    toast('Queue error: ' + e.message);
+  } finally { enableBtn('sc-queue-btn'); }
+}
+
+function renderScan(data) {
+  const { file, verdict, category, features } = data;
+  const vuln = verdict.is_vulnerable;
+  const banner = document.getElementById('sc-verdict-banner');
+  banner.className = `verdict-banner ${vuln ? 'vuln' : 'safe'}`;
+  setText('sc-icon', vuln ? '🔴' : '🟢');
+  setText('sc-label', vuln ? 'Vulnerable' : 'Secure');
+  setText('sc-vfile', file);
+  const cp = vuln ? verdict.vulnerable_probability : verdict.safe_probability;
+  setText('sc-conf', Math.round(cp*100) + '%');
+  setTimeout(() => {
+    setBar('sc-bvuln','sc-pvuln', verdict.vulnerable_probability);
+    setBar('sc-bsafe','sc-psafe', verdict.safe_probability);
+  }, 80);
+
+  const catCard = document.getElementById('sc-cat-card');
+  if (vuln && category) {
+    catCard.style.display = 'block';
+    setText('sc-cat-badge', category.predicted.toUpperCase());
+    setText('sc-cat-conf', (category.confidence*100).toFixed(1)+'%');
+    const barsEl = document.getElementById('sc-cat-bars');
+    barsEl.innerHTML = '';
+    const entries = Object.entries(category.probabilities);
+    const mx = entries[0][1];
+    entries.forEach(([cls,prob]) => {
+      const act = cls === category.predicted;
+      barsEl.innerHTML += `<div class="prob-row">
+        <span class="prob-lbl" style="${act?'color:var(--yellow)':''}">${cls}</span>
+        <div class="bar-track"><div class="bar-fill fill-yellow" style="width:${(prob/mx*100).toFixed(1)}%"></div></div>
+        <span class="bar-val">${(prob*100).toFixed(1)}%</span>
+      </div>`;
+    });
+  } else { catCard.style.display = 'none'; }
+
+  // Importances
+  const impGrid = document.getElementById('sc-imp-grid');
+  impGrid.innerHTML = '';
+  const mxImp = features.importances[0]?.importance || 1;
+  features.importances.forEach(({feature, importance}) => {
+    const w = (importance/mxImp*100).toFixed(1);
+    impGrid.innerHTML += `<div class="imp-row">
+      <span class="imp-name" title="${feature}">${feature}</span>
+      <div class="imp-track"><div class="imp-fill" style="width:${w}%"></div></div>
+      <span class="imp-pct">${(importance*100).toFixed(1)}%</span>
+    </div>`;
+  });
+
+  // Raw features
+  const featEl = document.getElementById('sc-feat-values');
+  featEl.innerHTML = '';
+  Object.entries(features.values).forEach(([k,v]) => {
+    featEl.innerHTML += `<div class="feat-kv">
+      <span class="feat-k">${k}</span>
+      <span class="feat-v ${v!==0&&v!==false?'nz':''}">${typeof v==='number'?(Number.isInteger(v)?v:v.toFixed(3)):v}</span>
+    </div>`;
+  });
+  const toggle = document.getElementById('sc-feat-toggle');
+  toggle.textContent = '▶ Show raw feature values';
+  featEl.classList.remove('open');
+  show('sc-result');
+}
+
+function toggleFeat() {
+  const el = document.getElementById('sc-feat-values');
+  const tog = document.getElementById('sc-feat-toggle');
+  el.classList.toggle('open');
+  tog.textContent = el.classList.contains('open') ? '▼ Hide raw feature values' : '▶ Show raw feature values';
+}
+
+/* ══════════════════════════════════════════════════════
+   TRAINING
+══════════════════════════════════════════════════════ */
+function selectModel(m) {
+  currentModel = m;
+  ['binary','category','all'].forEach(id => {
+    document.getElementById('tr-tab-'+id).classList.toggle('active', id===m);
+  });
+}
+
+async function runTraining() {
+  const n  = document.getElementById('hp-n').value.trim();
+  const lr = document.getElementById('hp-lr').value.trim();
+  const d  = document.getElementById('hp-d').value.trim();
+  const hasCustom = n || lr || d;
+
+  hideErr('tr-err');
+  hide('tr-results');
+  show('tr-prog');
+  disableBtn('tr-btn');
+  setLog('tr-log', [{cls:'log-info', text:`▸ Starting ${currentModel} training…`}]);
+
+  try {
+    let url, body=null, headers={};
+    if (hasCustom) {
+      const suffix = currentModel === 'binary' ? 'binary/custom'
+                   : currentModel === 'category' ? 'category/custom'
+                   : 'binary/custom'; // 'all' + custom not supported, fall back to binary
+      url = `${API}/train/${suffix}`;
+      body = JSON.stringify({
+        n_estimators: n ? parseInt(n) : null,
+        learning_rate: lr ? parseFloat(lr) : null,
+        max_depth: d ? parseInt(d) : null,
+      });
+      headers['Content-Type'] = 'application/json';
+    } else {
+      url = `${API}/train/${currentModel}`;
+    }
+
+    appendLog('tr-log', {cls:'log-info', text: `▸ POST ${url}`});
+
+    const r = await fetch(url, { method:'POST', headers, body });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || `HTTP ${r.status}`);
+    hide('tr-prog');
+    renderTrainResult(data, currentModel === 'all' ? data.binary : data);
+    toast('✓ Training complete');
+  } catch(e) {
+    hide('tr-prog');
+    showErr('tr-err', `Training failed: ${e.message}`);
+  } finally { enableBtn('tr-btn'); }
+}
+
+function renderTrainResult(raw, data) {
+  if (!data) { showErr('tr-err','No result data.'); return; }
+  const isBinary = !data.metrics?.per_class && !data.metrics?.macro_f1;
+  const m = data.metrics;
+
+  setText('tr-dur', `Training completed in ${data.duration_seconds}s`);
+
+  const stats = document.getElementById('tr-stats');
+  if (isBinary) {
+    stats.innerHTML = `
+      ${sb('Accuracy', pct(m.accuracy), rc(m.accuracy))}
+      ${sb('ROC AUC',  pct(m.roc_auc),  rc(m.roc_auc))}
+      ${sb('Precision',pct(m.precision),rc(m.precision))}
+      ${sb('Recall',   pct(m.recall),   rc(m.recall))}
+      ${sb('F1',       pct(m.f1),       rc(m.f1))}
+    `;
+  } else {
+    stats.innerHTML = `
+      ${sb('Accuracy',    pct(m.accuracy),   rc(m.accuracy))}
+      ${sb('Macro F1',    pct(m.macro_f1),   rc(m.macro_f1))}
+      ${sb('Weighted F1', pct(m.weighted_f1),rc(m.weighted_f1))}
+    `;
+  }
+
+  // Confusion matrix
+  const cmWrap = document.getElementById('tr-cm-wrap');
+  if (isBinary) {
+    const [[tn,fp],[fn,tp]] = m.confusion_matrix;
+    cmWrap.innerHTML = `<div class="cm2">
+      <div class="cm-cell cm-tp"><div class="cm-val">${tp}</div><div class="cm-lbl">True Positive</div></div>
+      <div class="cm-cell cm-fp"><div class="cm-val">${fp}</div><div class="cm-lbl">False Positive</div></div>
+      <div class="cm-cell cm-fn"><div class="cm-val">${fn}</div><div class="cm-lbl">False Negative</div></div>
+      <div class="cm-cell cm-tn"><div class="cm-val">${tn}</div><div class="cm-lbl">True Negative</div></div>
+    </div>`;
+  } else {
+    const mat = m.confusion_matrix, cls = m.classes;
+    const mx = Math.max(...mat.flat());
+    let html = '<div style="overflow-x:auto"><table class="cm-table"><thead><tr><th></th>';
+    cls.forEach(c => { html += `<th>${c.slice(0,7)}</th>`; });
+    html += '</tr></thead><tbody>';
+    mat.forEach((row, i) => {
+      html += `<tr><td class="row-lbl">${cls[i]}</td>`;
+      row.forEach((v, j) => {
+        const alpha = mx > 0 ? v/mx : 0;
+        const bg = i===j ? `rgba(0,230,118,${Math.max(.08,alpha*.6)})` : v>0 ? `rgba(255,59,92,${Math.min(.7,alpha*.8)})` : '';
+        html += `<td class="${i===j?'cm-diag':v>0?'cm-off':''}" style="${bg?'background:'+bg:''}">${v}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    cmWrap.innerHTML = html;
+  }
+
+  // Per-class
+  const pcCard = document.getElementById('tr-pc-card');
+  if (!isBinary && m.per_class) {
+    pcCard.style.display = 'block';
+    const tbody = document.getElementById('tr-pc-tbody');
+    tbody.innerHTML = Object.entries(m.per_class)
+      .sort((a,b) => b[1].f1-a[1].f1)
+      .map(([cls,v]) => `<tr>
+        <td class="cls-name">${cls}</td>
+        <td>${miniBar(v.precision,'var(--cyan)')}</td>
+        <td>${miniBar(v.recall,'var(--purple)')}</td>
+        <td>${miniBar(v.f1,'var(--yellow)')}</td>
+        <td style="color:var(--muted)">${v.support}</td>
+      </tr>`).join('');
+    raf(() => animate('[data-mw]', el => el.style.width = el.dataset.mw + '%'));
+  } else { pcCard.style.display = 'none'; }
+
+  // Importances
+  const impGrid = document.getElementById('tr-imp-grid');
+  impGrid.innerHTML = '';
+  const mxImp = data.feature_importances[0]?.importance || 1;
+  data.feature_importances.forEach(({feature, importance}) => {
+    const w = (importance/mxImp*100).toFixed(1);
+    impGrid.innerHTML += `<div class="imp-row">
+      <span class="imp-name" title="${feature}">${feature}</span>
+      <div class="imp-track"><div class="imp-fill" style="width:${w}%"></div></div>
+      <span class="imp-pct">${(importance*100).toFixed(1)}%</span>
+    </div>`;
+  });
+
+  show('tr-results');
+}
+
+/* ══════════════════════════════════════════════════════
+   ACTIVE LEARNING
+══════════════════════════════════════════════════════ */
+async function loadQueue() {
+  try {
+    const r = await fetch(`${API}/api/queue?limit=100&strategy=uncertainty`);
+    const d = await r.json();
+    setText('al-pending',  d.total_pending);
+    setText('al-highunc',  d.high_uncertainty.length);
+    setText('al-boundary', d.boundary_cases.length);
+    setText('alt-high-cnt',  `(${d.high_uncertainty.length})`);
+    setText('alt-bound-cnt', `(${d.boundary_cases.length})`);
+    setText('alt-multi-cnt', `(${d.multi_flagged.length})`);
+    document.getElementById('al-nav-badge').textContent = d.total_pending;
+
+    renderAlList('al-high-list',     d.high_uncertainty);
+    renderAlList('al-boundary-list', d.boundary_cases);
+    renderAlList('al-multi-list',    d.multi_flagged);
+  } catch(e) {
+    showErr('al-err', 'Queue load error: ' + e.message);
+  }
+}
+
+function switchAlTab(tab) {
+  currentAlTab = tab;
+  ['high','bound','multi'].forEach(t => {
+    document.getElementById('alt-'+t).classList.toggle('active', t===tab);
+  });
+  hide('al-high-list'); hide('al-boundary-list'); hide('al-multi-list');
+  const map = {high:'al-high-list', boundary:'al-boundary-list', multi:'al-multi-list'};
+  show(map[tab]);
+}
+
+function renderAlList(containerId, rows) {
+  const el = document.getElementById(containerId);
+  if (!rows.length) { el.innerHTML = '<div class="empty">No items in this bucket.</div>'; return; }
+  el.innerHTML = rows.map(row => alertCardHTML(row)).join('');
+  raf(() => {
+    el.querySelectorAll('.unc-fill').forEach(f => { f.style.width = f.dataset.w + '%'; });
+  });
+}
+
+function alertCardHTML(row) {
+  const sid = String(row.sample_id || '');
+  const key = sid.replace(/[^a-zA-Z0-9_-]/g, '-');
+  const vuln = parseInt(row.binary_prediction) === 1;
+  const unc  = parseFloat(row.uncertainty_score) || 0;
+  const uncCls = unc > .35 ? 'badge-unc-high' : unc > .15 ? 'badge-unc-med' : 'badge-unc-low';
+  const cat  = row.multiclass_prediction && row.multiclass_prediction !== 'N/A' ? row.multiclass_prediction : '';
+
+  return `<div class="alert-card" id="acard-${key}">
+    <div class="alert-top">
+      <span class="alert-id">${sid}</span>
+      <div class="alert-badges">
+        ${vuln ? '<span class="badge badge-vuln">VULN</span>' : '<span class="badge badge-safe">SAFE</span>'}
+        ${cat ? `<span class="badge badge-cat">${cat.toUpperCase()}</span>` : ''}
+        <span class="badge ${uncCls}">unc ${(unc*100).toFixed(0)}%</span>
+      </div>
+    </div>
+    <div class="alert-summary">${row.explanation_summary || 'No explanation available.'}</div>
+    <div class="unc-row">
+      <span class="unc-lbl">uncertainty</span>
+      <div class="unc-track"><div class="unc-fill" data-w="${Math.round(unc*100)}"></div></div>
+      <span style="font-family:var(--mono);font-size:.7rem;color:var(--muted)">${(unc*100).toFixed(1)}%</span>
+    </div>
+    <div class="review-row">
+      <input class="review-input" id="cat-${key}" placeholder="category (e.g. sqli, xss)" value="${cat}" style="flex:1">
+      <input class="review-input" id="notes-${key}" placeholder="analyst notes" style="flex:1.5">
+    </div>
+    <div class="review-btn-row">
+      <button class="btn btn-success" style="font-size:.74rem;padding:.4rem .8rem"
+        onclick="submitReview('${key}','${sid}','0','${row.binary_prediction}','${row.binary_confidence}','${row.multiclass_prediction}','${row.multiclass_confidence}')">
+        ✓ Mark Safe
+      </button>
+      <button class="btn btn-danger" style="font-size:.74rem;padding:.4rem .8rem"
+        onclick="submitReview('${key}','${sid}','1','${row.binary_prediction}','${row.binary_confidence}','${row.multiclass_prediction}','${row.multiclass_confidence}')">
+        ✗ Mark Vulnerable
+      </button>
+    </div>
+    <div class="review-status" id="rstatus-${key}"></div>
+  </div>`;
+}
+
+async function submitReview(key, sampleId, analystLabel, binaryPred, binaryConf, multiPred, multiConf) {
+  const category = document.getElementById('cat-'+key)?.value.trim() || '';
+  const notes    = document.getElementById('notes-'+key)?.value.trim() || '';
+  const statusEl = document.getElementById('rstatus-'+key);
+  statusEl.className = 'review-status';
+  statusEl.textContent = 'Submitting…';
+
+  const payload = {
+    sample_id: sampleId,
+    analyst_label: parseInt(analystLabel),
+    analyst_category: category,
+    review_notes: notes,
+    reviewed_by: 'dashboard_analyst',
+    source_name: 'dashboard',
+    binary_prediction: parseInt(binaryPred)||0,
+    binary_confidence: parseFloat(binaryConf)||0,
+    multiclass_prediction: multiPred === 'N/A' ? '' : (multiPred||''),
+    multiclass_confidence: parseFloat(multiConf)||0,
+  };
+
+  try {
+    const r = await fetch(`${API}/api/reviews`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Submission failed');
+    statusEl.className = 'review-status ok';
+    statusEl.textContent = `✓ Saved as ${analystLabel==='1'?'Vulnerable':'Safe'}`;
+    document.getElementById('acard-'+key)?.classList.add('reviewed');
+    toast(`✓ Review saved for ${sampleId}`);
+    // Update review badge
+    fetch(`${API}/api/reviews`).then(r=>r.json()).then(d => {
+      setText('rev-nav-badge', d.total_reviews ?? '—');
+    });
+  } catch(e) {
+    statusEl.className = 'review-status err';
+    statusEl.textContent = '✗ ' + e.message;
+    toast('Review error: ' + e.message);
+  }
+}
+
+async function retrainActive() {
+  hideErr('al-err');
+  hide('al-retrain-result');
+  show('al-prog');
+  disableBtn('al-retrain-btn');
+  document.getElementById('al-prog-lbl').textContent = 'Retraining with analyst labels…';
+  setLog('al-log', [{cls:'log-info',text:'▸ Merging analyst labels with original dataset…'}]);
+
+  try {
+    const r = await fetch(`${API}/api/retrain-active`, { method:'POST' });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || `HTTP ${r.status}`);
+    hide('al-prog');
+
+    const statsEl = document.getElementById('al-retrain-stats');
+    const b = d.binary;
+    statsEl.innerHTML = `
+      ${sb('Accuracy',  pct(b.accuracy),  rc(b.accuracy))}
+      ${sb('ROC AUC',   pct(b.roc_auc),   rc(b.roc_auc))}
+      ${sb('F1',        pct(b.f1),        rc(b.f1))}
+      ${sb('Analyst Labels', d.dataset.analyst_rows, '')}
+      ${sb('Total Rows', d.dataset.total_rows, '')}
+    `;
+    show('al-retrain-result');
+    toast(`✓ Retrained with ${d.dataset.analyst_rows} analyst label(s)`);
+    loadOverview();
+  } catch(e) {
+    hide('al-prog');
+    showErr('al-err', 'Retrain error: ' + e.message);
+  } finally { enableBtn('al-retrain-btn'); }
+}
+
+/* ══════════════════════════════════════════════════════
+   REVIEWS
+══════════════════════════════════════════════════════ */
+async function loadReviews() {
+  try {
+    const r = await fetch(`${API}/api/reviews`);
+    const d = await r.json();
+    setText('rv-total', d.total_reviews ?? '—');
+    setText('rv-vuln',  d.vulnerable_reviews ?? '—');
+    setText('rv-safe',  d.safe_reviews ?? '—');
+
+    const rows = d.latest_reviews || [];
+    const wrap = document.getElementById('rv-table-wrap');
+    if (!rows.length) { wrap.innerHTML = '<div class="empty">No reviews yet.</div>'; return; }
+
+    const cols = ['sample_id','analyst_label','analyst_category','binary_prediction',
+                  'binary_confidence','multiclass_prediction','multiclass_confidence',
+                  'review_notes','reviewed_by','reviewed_at'];
+    wrap.innerHTML = `<div style="overflow-x:auto">
+      <table class="rev-table">
+        <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+        <tbody>${rows.map(row=>`<tr>${cols.map(c=>{
+          const v = row[c] ?? '';
+          let cls = '';
+          if (c==='analyst_label') cls = String(v)==='1'?'label-vuln':String(v)==='0'?'label-safe':'';
+          return `<td class="${cls}" title="${v}">${v}</td>`;
+        }).join('')}</tr>`).join('')}</tbody>
+      </table></div>`;
+  } catch(e) {
+    toast('Reviews error: ' + e.message);
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   SHARED UTILS
+══════════════════════════════════════════════════════ */
+function setText(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
+function show(id)  { const el=document.getElementById(id); if(el) el.style.display='block'; }
+function hide(id)  { const el=document.getElementById(id); if(el) el.style.display='none'; }
+function disableBtn(id) { const el=document.getElementById(id); if(el) el.disabled=true; }
+function enableBtn(id)  { const el=document.getElementById(id); if(el) el.disabled=false; }
+function showErr(id,msg){ const el=document.getElementById(id); if(el){el.textContent='⚠ '+msg;el.style.display='block';} }
+function hideErr(id)    { const el=document.getElementById(id); if(el) el.style.display='none'; }
+function pct(v)  { return typeof v==='number' ? (v*100).toFixed(1)+'%' : '—'; }
+function rc(v)   { return v>=.8?'good':v>=.65?'ok':'bad'; }
+function raf(fn) { requestAnimationFrame(fn); }
+function animate(sel, fn) { document.querySelectorAll(sel).forEach(fn); }
+function setBar(barId,valId,prob) {
+  const el=document.getElementById(barId); if(el) el.style.width=(prob*100)+'%';
+  const vl=document.getElementById(valId); if(vl) vl.textContent=(prob*100).toFixed(1)+'%';
+}
+function setLog(id,lines) {
+  const el=document.getElementById(id);
+  if(el) el.innerHTML=lines.map(l=>`<span class="${l.cls}">${l.text}</span>`).join('');
+}
+function appendLog(id,line) {
+  const el=document.getElementById(id);
+  if(el) el.innerHTML+=`<span class="${line.cls}">${line.text}</span>\n`;
+}
+function sb(label,value,cls) {
+  return `<div class="stat-box"><div class="stat-label">${label}</div><div class="stat-value ${cls}">${value}</div></div>`;
+}
+function miniBar(val,color) {
+  const pctStr = pct(val);
+  return `<div class="mini-wrap">
+    <div class="mini-bar"><div class="mini-fill" data-mw="${Math.round(val*100)}" style="background:${color}"></div></div>
+    <span style="font-family:var(--mono);font-size:.76rem">${pctStr}</span>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════════════════ */
+checkConn();
+setInterval(checkConn, 30000);
+loadOverview();
+</script>
+</body>
+</html>

@@ -159,3 +159,20 @@ async def features_only(file: UploadFile = File(...)):
     src = (await file.read()).decode("utf-8", errors="ignore")
     return JSONResponse({"file": file.filename,
                          "features": extract_features(src, file.filename)})
+
+
+# ─── Mount training router ────────────────────────────────────────────────── #
+# Add these two lines after "app = FastAPI(...)" in api.py:
+#
+#   from train_routes import router as train_router
+#   app.include_router(train_router, prefix="/train", tags=["Training"])
+#
+# (Already done below for completeness)
+
+from train_routes import router as train_router
+
+app.include_router(train_router, prefix="/train", tags=["Training"])
+
+from active_learning_routes import router as al_router
+
+app.include_router(al_router, prefix="/api", tags=["Active Learning"])
