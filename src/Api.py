@@ -32,6 +32,7 @@ from fastapi.responses import JSONResponse
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.scanners.java_features import extract_features
+from src.scanners.python_features import extract_python_features
 
 
 
@@ -92,17 +93,19 @@ def health():
 async def predict(file: UploadFile = File(...)):
     if binary_model is None:
         raise HTTPException(503, "Models not loaded.")
-    if not file.filename.endswith(".java"):
-        raise HTTPException(400, "Only .java files are accepted.")
+    if not file.filename.endswith(".java") and not file.filename.endswith(".py"):
+        raise HTTPException(400, "Only .java and .py files are accepted.")
 
     source_code = (await file.read()).decode("utf-8", errors="ignore")
     if not source_code.strip():
         raise HTTPException(400, "File is empty.")
 
-    try:
+    if file.filename.endswith(".java"):
         features = extract_features(source_code, file_name=file.filename)
-    except Exception as e:
-        raise HTTPException(500, f"Feature extraction failed: {e}")
+    elif file.filename.endswith(".py"):
+        features = extract_python_features(source_code, file_name=file.filename)
+    else:
+        raise HTTPException(400, "Only .java and .py files are accepted.")
 
     # Binary
     try:
