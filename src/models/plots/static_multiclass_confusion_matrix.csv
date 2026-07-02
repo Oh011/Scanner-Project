@@ -1,0 +1,12 @@
+,Predicted cmdi,Predicted crypto,Predicted hash,Predicted ldapi,Predicted pathtraver,Predicted securecookie,Predicted sqli,Predicted trustbound,Predicted weakrand,Predicted xpathi,Predicted xss
+Actual cmdi,19,0,0,0,0,0,6,0,0,0,0
+Actual crypto,0,22,4,0,0,0,0,0,0,0,0
+Actual hash,0,3,21,0,1,0,1,0,0,0,0
+Actual ldapi,0,0,0,4,0,0,1,0,0,0,0
+Actual pathtraver,1,0,1,0,23,0,1,1,0,0,0
+Actual securecookie,0,0,0,0,0,4,0,1,0,0,2
+Actual sqli,5,0,1,0,0,0,48,0,0,0,0
+Actual trustbound,0,0,0,0,0,3,0,10,0,0,4
+Actual weakrand,0,0,0,0,0,0,0,0,44,0,0
+Actual xpathi,0,0,0,0,1,0,0,0,0,2,0
+Actual xss,0,0,0,0,0,0,0,3,0,0,46

@@ -1,0 +1,15 @@
+feature,importance
+total_chars,0.2877236266269678
+try_catch_count,0.2661580306536296
+source_to_sink_line_distance,0.15949137197953953
+total_lines,0.09821079273498586
+string_literal_count,0.07467764840819933
+variable_alias_hops,0.03354840396171993
+string_concat_near_sink_count,0.02677991701677291
+source_before_sink,0.02541648533473031
+taint_source_count,0.01988093123652647
+method_count,0.00811279204692833
+has_any_sink,0.0
+ast_parse_success,0.0
+import_count,0.0
+taint_trace_parse_error,0.0
